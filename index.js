@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -59,6 +59,21 @@ async function run() {
         console.error(error);
         res.status(400).send("Error adding camp");
       }
+    });
+    app.get("/camps", async (req, res) => {
+      try {
+        const camps = await campCollection.find().toArray();
+        res.status(200).json(camps);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Error retrieving camps");
+      }
+    });
+    app.get("/camps/:id", async (req, res) => {
+      const { id } = req.params;
+      console.log(id);
+      const camp = await campCollection.findOne({ _id: new ObjectId(id) });
+      res.json(camp);
     });
 
     await client.db("admin").command({ ping: 1 });
