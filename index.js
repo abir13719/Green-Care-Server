@@ -26,6 +26,9 @@ async function run() {
     await client.connect();
     const userCollection = client.db("greenCare").collection("users");
     const campCollection = client.db("greenCare").collection("camps");
+    const participantCollection = client
+      .db("greenCare")
+      .collection("participants");
 
     //User Related API
     app.post("/users", async (req, res) => {
@@ -71,9 +74,37 @@ async function run() {
     });
     app.get("/camps/:id", async (req, res) => {
       const { id } = req.params;
-      console.log(id);
       const camp = await campCollection.findOne({ _id: new ObjectId(id) });
       res.json(camp);
+    });
+    app.patch("/camps/:id", async (req, res) => {
+      const { id } = req.params;
+      const update = req.body;
+      const result = await campCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: update }
+      );
+      res.json(result);
+    });
+    app.get("/popular", async (req, res) => {
+      try {
+        const popularCamps = await campCollection
+          .find()
+          .sort({ participantCount: -1 })
+          .limit(6)
+          .toArray();
+        res.status(200).json(popularCamps);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Error retrieving popular camps");
+      }
+    });
+
+    //Participants Related API
+    app.post("/participants", async (req, res) => {
+      const participant = req.body;
+      const result = await participantCollection.insertOne(participant);
+      res.json(result);
     });
 
     await client.db("admin").command({ ping: 1 });
