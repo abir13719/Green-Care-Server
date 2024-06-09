@@ -163,6 +163,14 @@ async function run() {
       const result = await participantCollection.insertOne(participant);
       res.json(result);
     });
+    app.get("/participants", async (req, res) => {
+      try {
+        const participants = await participantCollection.find().toArray();
+        res.status(200).json(participants);
+      } catch (error) {
+        res.status(500).send("Error retrieving participants data");
+      }
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
