@@ -51,6 +51,39 @@ async function run() {
         res.status(400).send("Error registering user");
       }
     });
+    app.get("/users/:uid", async (req, res) => {
+      const { uid } = req.params;
+      try {
+        const user = await userCollection.findOne({ uid: uid });
+        if (!user) {
+          return res.status(404).send("User not found");
+        }
+        res.status(200).json(user);
+      } catch (error) {
+        res.status(500).send("Error fetching user profile");
+      }
+    });
+    app.patch("/users/:uid", async (req, res) => {
+      const { uid } = req.params;
+      const update = req.body;
+      console.log("Update request for UID:", uid);
+      console.log("Update data:", update);
+
+      const options = { upsert: true };
+      const filter = { uid: uid };
+      const updateDoc = { $set: update };
+
+      try {
+        const result = await userCollection.updateOne(
+          filter,
+          updateDoc,
+          options
+        );
+        res.status(200).send("User profile updated successfully");
+      } catch (error) {
+        res.status(500).send("Error updating user profile");
+      }
+    });
 
     //Camp Related API
     app.post("/camps", async (req, res) => {
