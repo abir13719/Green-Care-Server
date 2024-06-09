@@ -132,6 +132,30 @@ async function run() {
         res.status(500).send("Error retrieving popular camps");
       }
     });
+    app.patch("/update-camp/:campId", async (req, res) => {
+      const { campId } = req.params;
+      const update = req.body;
+      try {
+        const result = await campCollection.updateOne(
+          { _id: new ObjectId(campId) },
+          { $set: update }
+        );
+        res.status(200).send("Camp updated successfully");
+      } catch (error) {
+        res.status(500).send("Error updating camp");
+      }
+    });
+    app.delete("/delete-camp/:campId", async (req, res) => {
+      const { campId } = req.params;
+      try {
+        const result = await campCollection.deleteOne({
+          _id: new ObjectId(campId),
+        });
+        res.status(200).send("Camp deleted successfully");
+      } catch (error) {
+        res.status(500).send("Error deleting camp");
+      }
+    });
 
     //Participants Related API
     app.post("/participants", async (req, res) => {
