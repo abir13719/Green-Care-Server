@@ -282,6 +282,14 @@ async function run() {
         res.status(500).send("Error submitting feedback");
       }
     });
+    app.get("/feedback", async (req, res) => {
+      try {
+        const feedback = await feedbackCollection.find().toArray();
+        res.status(200).json(feedback);
+      } catch (error) {
+        res.status(500).send("Error retrieving feedback data");
+      }
+    });
 
     app.get("/payments/:email", async (req, res) => {
       const { email } = req.params;
