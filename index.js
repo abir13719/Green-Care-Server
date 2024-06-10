@@ -159,9 +159,18 @@ async function run() {
 
     //Participants Related API
     app.post("/participants", async (req, res) => {
-      const participant = req.body;
-      const result = await participantCollection.insertOne(participant);
-      res.json(result);
+      const participantData = {
+        ...req.body,
+        paymentStatus: "Unpaid",
+        confirmationStatus: "Pending",
+      };
+      try {
+        const result = await participantCollection.insertOne(participantData);
+        res.status(201).json(result);
+      } catch (error) {
+        console.error("Error registering participant", error);
+        res.status(500).send("Error registering participant");
+      }
     });
     app.get("/participants", async (req, res) => {
       try {
@@ -169,6 +178,38 @@ async function run() {
         res.status(200).json(participants);
       } catch (error) {
         res.status(500).send("Error retrieving participants data");
+      }
+    });
+    app.get("/participants/:email", async (req, res) => {
+      const { email } = req.params;
+      try {
+        const participantRecords = await participantCollection
+          .find({ participantEmail: email })
+          .toArray();
+        res.status(200).json(participantRecords);
+      } catch (error) {
+        console.error("Error fetching registered camps", error);
+        res.status(500).send("Error fetching registered camps");
+      }
+    });
+    app.delete("/participants/:id", async (req, res) => {
+      const { id } = req.params;
+
+      try {
+        const participant = await participantCollection.findOne({
+          _id: new ObjectId(id),
+        });
+        await participantCollection.deleteOne({ _id: new ObjectId(id) });
+
+        await campCollection.updateOne(
+          { _id: new ObjectId(participant.campId) },
+          { $inc: { participantCount: -1 } }
+        );
+
+        res.status(200).send("Registration cancelled successfully");
+      } catch (error) {
+        console.error("Error cancelling registration", error);
+        res.status(500).send("Error cancelling registration");
       }
     });
 
