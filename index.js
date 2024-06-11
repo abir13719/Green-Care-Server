@@ -34,6 +34,7 @@ async function run() {
       .db("greenCare")
       .collection("participants");
     const feedbackCollection = client.db("greenCare").collection("feedback");
+    const paymentCollection = client.db("greenCare").collection("payments");
 
     // User Related API
     app.post("/users", async (req, res) => {
@@ -187,6 +188,8 @@ async function run() {
     });
 
     app.get("/participants", async (req, res) => {
+      console.log(req.query);
+      const { paymentStatus } = req.query;
       try {
         const participants = await participantCollection.find().toArray();
         res.status(200).json(participants);
@@ -300,6 +303,19 @@ async function run() {
       } catch (error) {
         console.error("Error fetching payments", error);
         res.status(500).send("Error fetching payments");
+      }
+    });
+
+    app.post("/payment-info", async (req, res) => {
+      const paymentInfo = req.body;
+      try {
+        const result = await paymentCollection.insertOne(paymentInfo);
+        res
+          .status(200)
+          .json({ message: "Payment information saved successfully" });
+      } catch (error) {
+        console.error("Error saving payment information", error);
+        res.status(500).json({ error: "Internal Server Error" });
       }
     });
 
