@@ -294,11 +294,12 @@ async function run() {
       }
     });
 
-    app.get("/payments/:email", async (req, res) => {
+    app.get("/payment-info/:email", async (req, res) => {
       const { email } = req.params;
-
       try {
-        const payments = await participantCollection.find({ email }).toArray();
+        const payments = await paymentCollection
+          .find({ email: email })
+          .toArray();
         res.status(200).json(payments);
       } catch (error) {
         console.error("Error fetching payments", error);
