@@ -2,9 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const dotenv = require("dotenv");
-const stripe = require("stripe")(
-  "sk_test_51PMOxXRom0dhw37t27eFcL861GZdjqdTuOzJoQKpjeRZsw7MiAjtkGgxtRjiXR2Yy3CWQfSDQHA4ug2MEjr0fj1x00AY7AN5Dw"
-);
+const stripe = require("stripe")(process.env.STRIPE);
 
 dotenv.config();
 
@@ -27,7 +25,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const userCollection = client.db("greenCare").collection("users");
     const campCollection = client.db("greenCare").collection("camps");
     const participantCollection = client
@@ -35,10 +33,22 @@ async function run() {
       .collection("participants");
     const feedbackCollection = client.db("greenCare").collection("feedback");
     const paymentCollection = client.db("greenCare").collection("payments");
+    const sliderCollection = client.db("greenCare").collection("sliders");
+
+    //Sliders API
+    app.get("/sliders", async (req, res) => {
+      try {
+        const sliders = await sliderCollection.find().toArray();
+        res.status(200).json(sliders);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Error GET sliders");
+      }
+    });
 
     // User Related API
     app.post("/users", async (req, res) => {
-      const { uid, name, email, profilePicture } = req.body;
+      const { uid, name, email, profilePicture, role } = req.body;
       try {
         const alreadyUser = await userCollection.findOne({ email: email });
         if (alreadyUser) {
@@ -49,6 +59,7 @@ async function run() {
           name,
           email,
           profilePicture,
+          role,
         };
         const result = await userCollection.insertOne(newUser);
         res.status(201).send("User registered successfully");
@@ -57,11 +68,10 @@ async function run() {
         res.status(400).send("Error registering user");
       }
     });
-
-    app.get("/users/:uid", async (req, res) => {
-      const { uid } = req.params;
+    app.get("/users/:email", async (req, res) => {
+      const { email } = req.params;
       try {
-        const user = await userCollection.findOne({ uid: uid });
+        const user = await userCollection.findOne({ email: email });
         if (!user) {
           return res.status(404).send("User not found");
         }
@@ -94,6 +104,29 @@ async function run() {
     });
 
     // Camp Related API
+    app.get("/camps", async (req, res) => {
+      try {
+        const camps = await campCollection.find().toArray();
+        res.status(200).json(camps);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Error GET camps");
+      }
+    });
+    app.get("/popular", async (req, res) => {
+      try {
+        const popularCamps = await campCollection
+          .find()
+          .sort({ participantCount: -1 })
+          .limit(6)
+          .toArray();
+        res.status(200).json(popularCamps);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Error GET popular camps");
+      }
+    });
+
     app.post("/camps", async (req, res) => {
       const campData = req.body;
       try {
@@ -102,16 +135,6 @@ async function run() {
       } catch (error) {
         console.error(error);
         res.status(400).send("Error adding camp");
-      }
-    });
-
-    app.get("/camps", async (req, res) => {
-      try {
-        const camps = await campCollection.find().toArray();
-        res.status(200).json(camps);
-      } catch (error) {
-        console.error(error);
-        res.status(500).send("Error retrieving camps");
       }
     });
 
@@ -129,20 +152,6 @@ async function run() {
         { $set: update }
       );
       res.json(result);
-    });
-
-    app.get("/popular", async (req, res) => {
-      try {
-        const popularCamps = await campCollection
-          .find()
-          .sort({ participantCount: -1 })
-          .limit(6)
-          .toArray();
-        res.status(200).json(popularCamps);
-      } catch (error) {
-        console.error(error);
-        res.status(500).send("Error retrieving popular camps");
-      }
     });
 
     app.patch("/update-camp/:campId", async (req, res) => {
@@ -320,10 +329,10 @@ async function run() {
       }
     });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    // "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
   }
 }
